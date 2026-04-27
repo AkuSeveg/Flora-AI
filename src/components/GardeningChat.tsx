@@ -56,8 +56,7 @@ export function GardeningChat() {
       }
     } catch (error) {
       console.error("Chat gagal:", error);
-      const message = error instanceof Error ? error.message : "Maaf, saya mengalami kesalahan. Silakan coba lagi.";
-      setMessages(prev => [...prev, { role: "model", text: message }]);
+      setMessages(prev => [...prev, { role: "model", text: "Maaf, saya mengalami kesalahan. Silakan coba lagi." }]);
     } finally {
       setLoading(false);
     }
