@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { createChat } from "@/src/lib/gemini";
+import type { Chat } from "@google/genai";
 import { motion, AnimatePresence } from "motion/react";
 
 interface Message {
@@ -18,16 +19,19 @@ export function GardeningChat() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const chatRef = useRef<any>(null);
+  const chatRef = useRef<Chat | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    chatRef.current = createChat();
-  }, []);
+  const ensureChat = (): Chat => {
+    if (!chatRef.current) {
+      chatRef.current = createChat();
+    }
+    return chatRef.current;
+  };
 
   useEffect(() => {
     if (scrollAreaRef.current) {
-      const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      const scrollContainer = scrollAreaRef.current.querySelector('[data-slot="scroll-area-viewport"]');
       if (scrollContainer) {
         scrollContainer.scrollTop = scrollContainer.scrollHeight;
       }
@@ -43,7 +47,8 @@ export function GardeningChat() {
     setLoading(true);
 
     try {
-      const result = await chatRef.current.sendMessage({ message: userMessage });
+      const chat = ensureChat();
+      const result = await chat.sendMessage({ message: userMessage });
       if (result.text) {
         setMessages(prev => [...prev, { role: "model", text: result.text }]);
       } else {
@@ -51,7 +56,8 @@ export function GardeningChat() {
       }
     } catch (error) {
       console.error("Chat gagal:", error);
-      setMessages(prev => [...prev, { role: "model", text: "Maaf, saya mengalami kesalahan. Silakan coba lagi." }]);
+      const message = error instanceof Error ? error.message : "Maaf, saya mengalami kesalahan. Silakan coba lagi.";
+      setMessages(prev => [...prev, { role: "model", text: message }]);
     } finally {
       setLoading(false);
     }
