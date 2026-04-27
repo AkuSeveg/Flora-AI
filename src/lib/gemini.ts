@@ -1,15 +1,30 @@
-import { GoogleGenAI } from "@google/genai";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+import { GoogleGenAI, type Chat } from "@google/genai";
 
 export const models = {
-  pro: "gemini-3.1-pro-preview",
-  flash: "gemini-3-flash-preview",
-  lite: "gemini-3.1-flash-lite-preview",
+  pro: "gemini-2.5-pro",
+  flash: "gemini-2.5-flash",
+  lite: "gemini-2.5-flash-lite",
 };
 
+const MISSING_KEY_MESSAGE =
+  "GEMINI_API_KEY belum diatur. Setel di file .env.local lalu jalankan ulang server.";
+
+let aiInstance: GoogleGenAI | null = null;
+
+function getAI(): GoogleGenAI {
+  if (aiInstance) return aiInstance;
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error(MISSING_KEY_MESSAGE);
+  }
+
+  aiInstance = new GoogleGenAI({ apiKey });
+  return aiInstance;
+}
+
 export async function identifyPlant(base64Image: string) {
-  const response = await ai.models.generateContent({
+  const response = await getAI().models.generateContent({
     model: models.pro,
     contents: [{
       parts: [
@@ -56,8 +71,8 @@ export async function identifyPlant(base64Image: string) {
   return JSON.parse(response.text);
 }
 
-export function createChat() {
-  return ai.chats.create({
+export function createChat(): Chat {
+  return getAI().chats.create({
     model: models.flash,
     config: {
       systemInstruction: "Anda adalah asisten berkebun ahli bernama Flora. Anda membantu pengguna dengan perawatan tanaman, identifikasi hama, dan tips berkebun. Bersikaplah ramah, menyemangati, dan berikan saran praktis dalam Bahasa Indonesia.",
